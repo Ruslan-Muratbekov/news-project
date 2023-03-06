@@ -14,6 +14,8 @@ import {TokenEntity} from "./entity/token.entity";
 import {validate} from "class-validator";
 import {IRegister} from "./interface/register.interface";
 import {ResetPasswordDto} from "./dto/resetPassword.dto";
+import {LoginDto} from "./dto/login.dto";
+import {TLogin} from "./interface/login.interface";
 
 @Injectable()
 export class AuthService {
@@ -36,8 +38,18 @@ export class AuthService {
 
 	}
 
-	async login() {
+	async login({username, password}: LoginDto): Promise<TLogin> {
+		const user = await this.authRepository.findOne({where: {username}})
+		if (!user) throw new HttpException('Ошибка! такого user нету', HttpStatus.BAD_REQUEST)
+		const verifyPassword = await bcrypt.compare(password, user.password)
+		if (!verifyPassword) throw new HttpException('Ошибка! логин или пароль не правильный', HttpStatus.BAD_REQUEST)
+		const userDto = new UserDto(user)
+		const tokens = await this.generateTokens({...userDto})
+		const userTokenModel = await this.tokenRepository.findOne({where: {authId: Number(userDto.id)}})
+		userTokenModel.refreshToken = tokens.refreshToken
+		await this.tokenRepository.manager.save(userTokenModel)
 
+		return {...tokens, user: userDto}
 	}
 
 	async logout() {

@@ -5,6 +5,8 @@ import {RegisterDto} from "./dto/register.dto";
 import {IRegister} from "./interface/register.interface";
 import {ResetPasswordDto} from "./dto/resetPassword.dto";
 import {SendResetPasswordDto} from "./dto/sendResetPassword.dto";
+import {LoginDto} from "./dto/login.dto";
+import {TLogin} from "./interface/login.interface";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -20,8 +22,8 @@ export class AuthController {
 	}
 
 	@Post('login')
-	async login() {
-
+	async login(@Body() data: LoginDto): Promise<TLogin> {
+		return this.authService.login(data)
 	}
 
 	@Post('logout')
