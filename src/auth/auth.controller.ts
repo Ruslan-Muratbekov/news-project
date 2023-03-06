@@ -1,6 +1,12 @@
-import {Controller, Get, Patch, Post, Put} from '@nestjs/common';
+import {Body, Controller, Get, Param, Patch, Post, Put} from '@nestjs/common';
 import {AuthService} from "./auth.service";
+import {ApiExcludeEndpoint, ApiTags} from "@nestjs/swagger";
+import {RegisterDto} from "./dto/register.dto";
+import {IRegister} from "./interface/register.interface";
+import {ResetPasswordDto} from "./dto/resetPassword.dto";
+import {SendResetPasswordDto} from "./dto/sendResetPassword.dto";
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
 	constructor(
@@ -9,67 +15,70 @@ export class AuthController {
 	}
 
 	@Post('change-password')
-	changePassword(){
+	async changePassword() {
 
 	}
 
 	@Post('login')
-	login(){
+	async login() {
 
 	}
 
 	@Post('logout')
-	logout(){
+	async logout() {
 
 	}
 
 	@Get('profile')
-	profileGet(){
+	async profileGet() {
 
 	}
 
 	@Post('profile')
-	profilePost(){
+	async profilePost() {
 
 	}
 
 	@Put('profile')
-	profilePut(){
+	async profilePut() {
 
 	}
 
 	@Patch('profile')
-	profilePatch(){
+	async profilePatch() {
 
 	}
 
 	@Post('register-email')
-	registerEmail(){
+	async registerEmail() {
 
 	}
 
 	@Post('register')
-	register(){
-
+	async register(@Body() data: RegisterDto): Promise<IRegister> {
+		return this.authService.register(data)
 	}
 
-	@Post('reset-password')
-	resetPassword(){
-
+	@Post('reset-password/:link')
+	async resetPassword(
+		@Param('link') link: string,
+		@Body() data: ResetPasswordDto
+	): Promise<void> {
+		await this.authService.resetPassword(link, data)
 	}
 
 	@Post('send-reset-password-link')
-	sendResetPasswordLink(){
-
+	async sendResetPassword(@Body() data: SendResetPasswordDto) {
+		await this.authService.sendResetPassword(data.login)
 	}
 
 	@Post('verify-email')
-	verifyEmail(){
+	async verifyEmail() {
 
 	}
 
 	@Post('verify-registration')
-	verifyRegistration(){
+	async verifyRegistration() {
 
 	}
 }
