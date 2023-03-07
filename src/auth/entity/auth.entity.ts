@@ -1,5 +1,5 @@
 import {Column, Entity, OneToOne, PrimaryGeneratedColumn} from "typeorm";
-import {IsEmail, IsString, isUUID, Length} from "class-validator";
+import {IsBoolean, IsEmail, IsString, isUUID, Length} from "class-validator";
 import {TokenEntity} from "./token.entity";
 
 @Entity({name: 'auth'})
@@ -10,6 +10,10 @@ export class AuthEntity {
 	@Column({nullable: true, unique: true, default: null})
 	@IsEmail()
 	email: string
+
+	@Column({nullable: true, default: false})
+	@IsBoolean()
+	isActivated: boolean
 
 	@Column({nullable: false, unique: true})
 	@IsString()
@@ -33,6 +37,9 @@ export class AuthEntity {
 
 	@Column({nullable: true, default: null})
 	resetPasswordLink: string
+
+	@Column({nullable: true, default: null})
+	resetEmailLink: string
 
 	@OneToOne(() => TokenEntity, (token) => token.authEntity)
 	TokenEntity: TokenEntity

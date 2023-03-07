@@ -7,9 +7,10 @@ import {ResetPasswordDto} from "./dto/resetPassword.dto";
 import {SendResetPasswordDto} from "./dto/sendResetPassword.dto";
 import {LoginDto} from "./dto/login.dto";
 import {TLogin} from "./interface/login.interface";
-import {ChangePasswordDto} from "./dto/changePassword.dto";
 import {AccessGuard} from "../common/guards/access.guard";
 import {Request} from "express";
+import {RefreshGuard} from "../common/guards/refresh.guard";
+import {ChangePasswordDto} from "./dto/changePassword-dto";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -34,9 +35,12 @@ export class AuthController {
 		return this.authService.login(data)
 	}
 
-	@Post('logout')
-	async logout() {
-
+	@UseGuards(RefreshGuard)
+	@Get('logout')
+	async logout(
+		@Req() req: Request
+	): Promise<void> {
+		await this.authService.logout(req.user)
 	}
 
 	@Get('profile')
@@ -59,9 +63,14 @@ export class AuthController {
 
 	}
 
+	@UseGuards(AccessGuard)
 	@Post('register-email')
-	async registerEmail() {
-
+	async registerEmail(
+		@Body("email") email: string,
+		@Req() req: Request
+	): Promise<void> {
+		// @ts-ignore
+		await this.authService.registerEmail(email, req.user)
 	}
 
 	@Post('register')
@@ -82,9 +91,11 @@ export class AuthController {
 		await this.authService.sendResetPassword(data.login)
 	}
 
-	@Post('verify-email')
-	async verifyEmail() {
-
+	@UseGuards(AccessGuard)
+	@Get('verify-email/:link')
+	async verifyEmail(@Param('link') link: string) {
+		// @ts-ignore
+		await this.authService.verifyEmail(link)
 	}
 
 	@Post('verify-registration')

@@ -1,4 +1,4 @@
-export class ReqUserChangePasswordDto {
+export class ReqUserDto {
 	id: number;
 	email: string;
 	username: string;

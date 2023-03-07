@@ -16,8 +16,9 @@ import {IRegister} from "./interface/register.interface";
 import {ResetPasswordDto} from "./dto/resetPassword.dto";
 import {LoginDto} from "./dto/login.dto";
 import {TLogin} from "./interface/login.interface";
-import {ChangePasswordDto} from "./dto/changePassword.dto";
-import {ReqUserChangePasswordDto} from "./dto/reqUserChangePassword.dto";
+import {ReqUserDto} from "./dto/reqUser.dto";
+import {LogoutDto} from "./dto/logout.dto";
+import {ChangePasswordDto} from "./dto/changePassword-dto";
 
 @Injectable()
 export class AuthService {
@@ -36,7 +37,7 @@ export class AuthService {
 	) {
 	}
 
-	async changePassword(data: ChangePasswordDto, user: ReqUserChangePasswordDto): Promise<void> {
+	async changePassword(data: ChangePasswordDto, user: ReqUserDto): Promise<void> {
 		const candidate = await this.authRepository.findOne({where: {username: user.username}})
 		if (!candidate) throw new HttpException('Ошибка!', HttpStatus.BAD_REQUEST)
 
@@ -64,8 +65,12 @@ export class AuthService {
 		return {...tokens, user: userDto}
 	}
 
-	async logout() {
-
+	async logout(user: LogoutDto): Promise<void> {
+		const tokens = await this.tokenRepository.findOne({where: {authId: user.id}})
+		if (!tokens) throw new HttpException('Ошибка! такого token нету', HttpStatus.BAD_REQUEST)
+		tokens.refreshToken = null
+		await this.tokenRepository.manager.save(tokens)
+		return;
 	}
 
 	async profileGet() {
@@ -84,8 +89,14 @@ export class AuthService {
 
 	}
 
-	async registerEmail() {
-
+	async registerEmail(email, user: ReqUserDto): Promise<void> {
+		const candidate = await this.authRepository.findOne({where: {username: user.username}})
+		if (!candidate) throw new HttpException('Ошибка! такого user нету', HttpStatus.BAD_REQUEST)
+		const resetEmailLink = uuid.v4()
+		candidate.resetEmailLink = resetEmailLink
+		candidate.email = email
+		await this.authRepository.manager.save(candidate)
+		await this.sendActivationMail(email, `${process.env.API_URL}/api/auth/verify-email/${resetEmailLink}`)
 	}
 
 	async register({
@@ -151,8 +162,12 @@ export class AuthService {
 		return;
 	}
 
-	async verifyEmail() {
-
+	async verifyEmail(link: string) {
+		const candidate = await this.authRepository.findOne({where: {resetEmailLink: link}})
+		if (!candidate) throw new HttpException('Такого пользователя нету!', HttpStatus.BAD_REQUEST)
+		candidate.resetEmailLink = null
+		candidate.isActivated = true
+		await this.authRepository.manager.save(candidate)
 	}
 
 	async verifyRegistration() {
