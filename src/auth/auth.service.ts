@@ -5,7 +5,6 @@ import {AuthEntity} from "./entity/auth.entity";
 import {Repository} from "typeorm";
 
 import * as bcrypt from 'bcrypt'
-import * as uuid from 'uuid'
 import * as process from "process";
 import * as nodemailer from 'nodemailer'
 import {UserDto} from "./dto/user.dto";
@@ -19,6 +18,9 @@ import {TLogin} from "./interface/login.interface";
 import {ReqUserDto} from "./dto/reqUser.dto";
 import {LogoutDto} from "./dto/logout.dto";
 import {ChangePasswordDto} from "./dto/changePassword-dto";
+import {VerifyEmailEntity} from "./entity/verifyEmail.entity";
+import {VerifyEmailDto} from "./dto/verifyEmail.dto";
+import {VerifyPasswordEntity} from "./entity/verifyPassword.entity";
 
 @Injectable()
 export class AuthService {
@@ -33,6 +35,8 @@ export class AuthService {
 	constructor(
 		@InjectRepository(AuthEntity) private readonly authRepository: Repository<AuthEntity>,
 		@InjectRepository(TokenEntity) private readonly tokenRepository: Repository<TokenEntity>,
+		@InjectRepository(VerifyEmailEntity) private readonly verifyRepository: Repository<VerifyEmailEntity>,
+		@InjectRepository(VerifyPasswordEntity) private readonly verifyPasswordRepository: Repository<VerifyPasswordEntity>,
 		private readonly jwtService: JwtService
 	) {
 	}
@@ -90,13 +94,20 @@ export class AuthService {
 	}
 
 	async registerEmail(email, user: ReqUserDto): Promise<void> {
-		const candidate = await this.authRepository.findOne({where: {username: user.username}})
-		if (!candidate) throw new HttpException('Ошибка! такого user нету', HttpStatus.BAD_REQUEST)
-		const resetEmailLink = uuid.v4()
-		candidate.resetEmailLink = resetEmailLink
-		candidate.email = email
-		await this.authRepository.manager.save(candidate)
-		await this.sendActivationMail(email, `${process.env.API_URL}/api/auth/verify-email/${resetEmailLink}`)
+		const verify = await this.verifyRepository.findOne({where: {authId: user.id}})
+		const emailToken = await this.generateEmailToken({email, id: user.id})
+		if (verify) {
+			verify.email = email;
+			verify.tokens = emailToken;
+			await this.verifyRepository.manager.save(verify)
+			await this.sendActivationMail(email, `${process.env.API_URL}/api/auth/verify-email/?jwt_link=${emailToken}`)
+			return;
+		}
+
+		const data = await this.verifyRepository.create({email, tokens: emailToken, authId: user.id})
+		await this.verifyRepository.manager.save(data)
+		await this.sendActivationMail(email, `${process.env.API_URL}/api/auth/verify-email/?jwt_link=${emailToken}`)
+		return;
 	}
 
 	async register({
@@ -138,13 +149,18 @@ export class AuthService {
 		return {...tokens, user: userDto}
 	}
 
-	async resetPassword(link: string, data: ResetPasswordDto): Promise<void> {
-		const user = await this.authRepository.findOne({where: {resetPasswordLink: link}})
-		if (!user) throw new HttpException('Ошибка! Не правильная ссылка или ссылка устарела!', HttpStatus.BAD_REQUEST)
-		if (data.password !== data.password_confirm) throw new HttpException('Пароли не совпадают', HttpStatus.BAD_REQUEST)
-		user.password = await bcrypt.hash(data.password, 8)
-		user.resetPasswordLink = ''
-		await this.authRepository.manager.save(user)
+	async resetPassword(jwt_password: string, {password, password_confirm}: ResetPasswordDto, {authId}): Promise<void> {
+		if (password !== password_confirm || !password || !password_confirm) {
+			throw new HttpException('Пароли не совпадает', HttpStatus.BAD_REQUEST)
+		}
+		const passwordModel = await this.verifyPasswordRepository.findOne({where: {authId}})
+		const userModel = await this.authRepository.findOne({where: {id: authId}})
+		if (!userModel) {
+			throw new HttpException('Ошибка! аккаунт не существует', HttpStatus.BAD_REQUEST)
+		}
+		userModel.password = await bcrypt.hash(password, 8)
+		await this.authRepository.manager.save(userModel)
+		await this.verifyPasswordRepository.manager.remove(passwordModel)
 		return;
 	}
 
@@ -152,26 +168,44 @@ export class AuthService {
 		const user = await this.authRepository.findOne({where: {username: login}})
 		if (!user) throw new HttpException('Такого пользователя нету!', HttpStatus.BAD_REQUEST)
 		if (!user.email) throw new HttpException('Почта еще не зарегана', HttpStatus.BAD_REQUEST)
-		const resetPasswordLink = uuid.v4()
-		user.resetPasswordLink = resetPasswordLink
-		await this.authRepository.manager.save(user)
+
+		const tokens = await this.generatePasswordToken({authId: user.id})
+		const passwordModel = await this.verifyPasswordRepository.findOne({where: {authId: user.id}})
+
+		if (passwordModel) {
+			passwordModel.tokens = tokens
+			await this.verifyPasswordRepository.manager.save(passwordModel)
+			await this.sendResetPasswordLink(
+				user.email,
+				`${process.env.API_URL}/api/auth/reset-password/?jwt_password=${tokens}`
+			)
+			return;
+		}
+
+		const verifyPasswordModel = await this.verifyPasswordRepository.create({tokens, authId: user.id})
+		await this.verifyPasswordRepository.manager.save(verifyPasswordModel)
 		await this.sendResetPasswordLink(
 			user.email,
-			`${process.env.API_URL}/api/auth/reset-password/${resetPasswordLink}`
+			`${process.env.API_URL}/api/auth/reset-password/?jwt_password=${tokens}`
 		)
 		return;
 	}
 
-	async verifyEmail(link: string) {
-		const candidate = await this.authRepository.findOne({where: {resetEmailLink: link}})
-		if (!candidate) throw new HttpException('Такого пользователя нету!', HttpStatus.BAD_REQUEST)
-		candidate.resetEmailLink = null
-		candidate.isActivated = true
+	async verifyEmail(link: string, user: VerifyEmailDto) {
+		const candidate = await this.authRepository.findOne({where: {id: user.id}})
+		if (!candidate) throw new HttpException('Ошибка в ссылке!', HttpStatus.BAD_REQUEST)
+		candidate.email = user.email
 		await this.authRepository.manager.save(candidate)
+		const verifyModel = await this.verifyRepository.findOne({where: {authId: user.authId}})
+		await this.verifyRepository.manager.remove(verifyModel)
 	}
 
-	async verifyRegistration() {
+	private async generateEmailToken(payload) {
+		return this.jwtService.sign(payload, {expiresIn: '30m', secret: process.env.SECRET_MAIL_KEY})
+	}
 
+	private async generatePasswordToken(payload) {
+		return this.jwtService.sign(payload, {expiresIn: '30m', secret: process.env.SECRET_PASSWORD_KEY})
 	}
 
 	private async generateTokens(payload) {
@@ -192,6 +226,7 @@ export class AuthService {
 			html: `
 			<div>
 					<h1>Для активации перейдите по ссылке</h1>
+					<p>Ссылка будет работать в течении 30 минут после она будет не рабочии</p>
 					<a href="${link}">${link}</a>	
 			</div>`
 		})

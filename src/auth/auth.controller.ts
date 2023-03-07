@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards} from '@nestjs/common';
+import {Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards} from '@nestjs/common';
 import {AuthService} from "./auth.service";
 import {ApiExcludeEndpoint, ApiTags} from "@nestjs/swagger";
 import {RegisterDto} from "./dto/register.dto";
@@ -11,6 +11,8 @@ import {AccessGuard} from "../common/guards/access.guard";
 import {Request} from "express";
 import {RefreshGuard} from "../common/guards/refresh.guard";
 import {ChangePasswordDto} from "./dto/changePassword-dto";
+import {EmailGuard} from "../common/guards/email.guard";
+import {PasswordGuard} from "../common/guards/password.guard";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -78,12 +80,15 @@ export class AuthController {
 		return this.authService.register(data)
 	}
 
-	@Post('reset-password/:link')
+	@UseGuards(PasswordGuard)
+	@Post('reset-password/')
 	async resetPassword(
-		@Param('link') link: string,
-		@Body() data: ResetPasswordDto
+		@Query('jwt_password') jwt_password: string,
+		@Body() data: ResetPasswordDto,
+		@Req() req: Request
 	): Promise<void> {
-		await this.authService.resetPassword(link, data)
+		// @ts-ignore
+		await this.authService.resetPassword(jwt_password, data, req.user)
 	}
 
 	@Post('send-reset-password-link')
@@ -91,15 +96,13 @@ export class AuthController {
 		await this.authService.sendResetPassword(data.login)
 	}
 
-	@UseGuards(AccessGuard)
-	@Get('verify-email/:link')
-	async verifyEmail(@Param('link') link: string) {
+	@UseGuards(EmailGuard)
+	@Get('verify-email/')
+	async verifyEmail(
+		@Query('jwt_link') jwt_link: string,
+		@Req() req: Request
+	) {
 		// @ts-ignore
-		await this.authService.verifyEmail(link)
-	}
-
-	@Post('verify-registration')
-	async verifyRegistration() {
-
+		await this.authService.verifyEmail(jwt_link, req.user)
 	}
 }

@@ -11,10 +11,6 @@ export class AuthEntity {
 	@IsEmail()
 	email: string
 
-	@Column({nullable: true, default: false})
-	@IsBoolean()
-	isActivated: boolean
-
 	@Column({nullable: false, unique: true})
 	@IsString()
 	@Length(1, 50)
@@ -34,12 +30,6 @@ export class AuthEntity {
 	@IsString()
 	@Length(1, 40)
 	first_name: string
-
-	@Column({nullable: true, default: null})
-	resetPasswordLink: string
-
-	@Column({nullable: true, default: null})
-	resetEmailLink: string
 
 	@OneToOne(() => TokenEntity, (token) => token.authEntity)
 	TokenEntity: TokenEntity
