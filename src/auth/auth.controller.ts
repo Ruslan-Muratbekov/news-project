@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Patch, Post, Put} from '@nestjs/common';
+import {Body, Controller, Get, Param, Patch, Post, Put, Req, UseGuards} from '@nestjs/common';
 import {AuthService} from "./auth.service";
 import {ApiExcludeEndpoint, ApiTags} from "@nestjs/swagger";
 import {RegisterDto} from "./dto/register.dto";
@@ -7,6 +7,9 @@ import {ResetPasswordDto} from "./dto/resetPassword.dto";
 import {SendResetPasswordDto} from "./dto/sendResetPassword.dto";
 import {LoginDto} from "./dto/login.dto";
 import {TLogin} from "./interface/login.interface";
+import {ChangePasswordDto} from "./dto/changePassword.dto";
+import {AccessGuard} from "../common/guards/access.guard";
+import {Request} from "express";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -16,9 +19,14 @@ export class AuthController {
 	) {
 	}
 
+	@UseGuards(AccessGuard)
 	@Post('change-password')
-	async changePassword() {
-
+	async changePassword(
+		@Body() data: ChangePasswordDto,
+		@Req() req: Request
+	): Promise<void> {
+		// @ts-ignore
+		await this.authService.changePassword(data, req.user)
 	}
 
 	@Post('login')

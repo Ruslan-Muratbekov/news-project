@@ -16,6 +16,8 @@ import {IRegister} from "./interface/register.interface";
 import {ResetPasswordDto} from "./dto/resetPassword.dto";
 import {LoginDto} from "./dto/login.dto";
 import {TLogin} from "./interface/login.interface";
+import {ChangePasswordDto} from "./dto/changePassword.dto";
+import {ReqUserChangePasswordDto} from "./dto/reqUserChangePassword.dto";
 
 @Injectable()
 export class AuthService {
@@ -34,8 +36,18 @@ export class AuthService {
 	) {
 	}
 
-	async changePassword() {
+	async changePassword(data: ChangePasswordDto, user: ReqUserChangePasswordDto): Promise<void> {
+		const candidate = await this.authRepository.findOne({where: {username: user.username}})
+		if (!candidate) throw new HttpException('Ошибка!', HttpStatus.BAD_REQUEST)
 
+		const verifyPassword = await bcrypt.compare(data.old_password, candidate.password)
+		if (!verifyPassword) throw new HttpException('Не правильный пароль', HttpStatus.BAD_REQUEST)
+
+		if (data.password !== data.password_confirm) throw new HttpException('Ошибка в валидации', HttpStatus.BAD_REQUEST)
+
+		candidate.password = await bcrypt.hash(data.password, 8)
+		await this.authRepository.manager.save(candidate)
+		return;
 	}
 
 	async login({username, password}: LoginDto): Promise<TLogin> {
