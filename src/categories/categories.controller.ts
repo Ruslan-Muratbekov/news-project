@@ -1,4 +1,4 @@
-import {Controller, Delete, Get, Patch, Post, Put} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from '@nestjs/common';
 import {CategoriesService} from "./categories.service";
 
 @Controller('categories')
@@ -9,32 +9,44 @@ export class CategoriesController {
 	}
 
 	@Get()
-	categoriesGetAll(){
-
+	async categoriesGetAll(){
+		return this.categoriesService.categoriesGetAll()
 	}
 
 	@Post()
-	categoriesPost(){
-
+	async categoriesPost(
+		@Body() title: string
+	){
+		return this.categoriesService.categoriesPost(title)
 	}
 
-	@Get()
-	categoriesGet(){
-
+	@Get(':id')
+	async categoriesGet(
+		@Param('id') id: number
+	){
+		return this.categoriesService.categoriesGet(id)
 	}
 
-	@Put()
-	categoriesPut(){
-
+	@Put(':id')
+	async categoriesPut(
+		@Param('id') id: number,
+		@Body('title') title: string
+	){
+		return this.categoriesService.categoriesPut(id, title)
 	}
 
-	@Patch()
-	categoriesPatch(){
-
+	@Patch(':id')
+	async categoriesPatch(
+		@Param('id') id: number,
+		@Body('title') title: string
+	){
+		return this.categoriesService.categoriesPatch(id, title)
 	}
 
-	@Delete()
-	categoriesDelete(){
-
+	@Delete(':id')
+	async categoriesDelete(
+		@Param('id') id: number
+	){
+		return this.categoriesService.categoriesDelete(id)
 	}
 }

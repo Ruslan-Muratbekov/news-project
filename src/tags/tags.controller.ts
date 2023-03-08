@@ -1,4 +1,4 @@
-import {Controller, Delete, Get, Patch, Post, Put} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from '@nestjs/common';
 import {TagsService} from "./tags.service";
 
 @Controller('tags')
@@ -9,32 +9,44 @@ export class TagsController {
 	}
 
 	@Get()
-	tagsGetAll(){
-
+	async tagsGetAll() {
+		return this.tagsService.tagsGetAll()
 	}
 
 	@Post()
-	tagsPost(){
-
+	async tagsPost(
+		@Body() title: string
+	) {
+		return this.tagsService.tagsPost(title)
 	}
 
-	@Get()
-	tagsGet(){
-
+	@Get(':id')
+	async tagsGet(
+		@Param('id') id: number
+	) {
+		return this.tagsService.tagsGet(id)
 	}
 
-	@Put()
-	tagsPut(){
-
+	@Put(':id')
+	async tagsPut(
+		@Body() title: string,
+		@Param('id') id: number
+	) {
+		return this.tagsService.tagsPut(id, title)
 	}
 
-	@Patch()
-	tagsPatch(){
-
+	@Patch(':id')
+	async tagsPatch(
+		@Body() title: string,
+		@Param('id') id: number
+	) {
+		return this.tagsService.tagsPatch(id, title)
 	}
 
-	@Delete()
-	tagsDelete(){
-
+	@Delete(':id')
+	async tagsDelete(
+		@Param('id') id: number
+	) {
+		return this.tagsService.tagsDelete(id)
 	}
 }

@@ -1,5 +1,6 @@
-import {Controller, Delete, Get, Patch, Post, Put} from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from '@nestjs/common';
 import {NewsService} from "./news.service";
+import {NewPostDto} from "./dto/newPost.dto";
 
 @Controller('news')
 export class NewsController {
@@ -9,32 +10,44 @@ export class NewsController {
 	}
 
 	@Get()
-	newsGetAll(){
-
+	async newsGetAll(){
+		return this.newsService.newsGetAll()
 	}
 
 	@Post()
-	newsPost(){
-
+	async newsPost(
+		@Body() data: NewPostDto
+	){
+		return this.newsService.newsPost(data)
 	}
 
-	@Get()
-	newsGet(){
-
+	@Get('id')
+	async newsGet(
+		@Param('id') id: number
+	){
+		return this.newsService.newsGet(id)
 	}
 
-	@Put()
-	newsPut(){
-
+	@Put('id')
+	async newsPut(
+		@Body() data: NewPostDto,
+		@Param('id') id: number
+	){
+		return this.newsService.newsPut(id, data)
 	}
 
-	@Patch()
-	newsPatch(){
-
+	@Patch('id')
+	async newsPatch(
+		@Body() data: NewPostDto,
+		@Param('id') id: number
+	){
+		return this.newsService.newsPatch(id, data)
 	}
 
-	@Delete()
-	newsDelete(){
-
+	@Delete('id')
+	async newsDelete(
+		@Param('id') id: number
+	){
+		return this.newsService.newsDelete(id)
 	}
 }

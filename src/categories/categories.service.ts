@@ -1,31 +1,42 @@
-import {Injectable} from "@nestjs/common";
+import {BadRequestException, Injectable} from "@nestjs/common";
+import {InjectRepository} from "@nestjs/typeorm";
+import {Repository} from "typeorm";
+import {CategoriesEntity} from "./entity/categories.entity";
 
 @Injectable()
 export class CategoriesService {
-	constructor() {
+	constructor(
+		@InjectRepository(CategoriesEntity) private readonly categoriesRepository: Repository<CategoriesEntity>,
+	) {
 	}
 
-	categoriesGetAll(){
-
+	async categoriesGetAll(){
+		return this.categoriesRepository.find()
 	}
 
-	categoriesPost(){
-
+	async categoriesPost(title){
+		const check = await this.categoriesRepository.findOne({where: {title}})
+		if(check) throw new BadRequestException("Такой tag уже существует")
+		const createTitle = await this.categoriesRepository.create({title})
+		return this.categoriesRepository.manager.save(createTitle)
 	}
 
-	categoriesGet(){
-
+	async categoriesGet(id){
+		return this.categoriesRepository.findOne({where: {id}})
 	}
 
-	categoriesPut(){
-
+	async categoriesPut(id, title){
+		const changeTitle = await this.categoriesRepository.findOne({where: {id}})
+		changeTitle.title = title
+		return this.categoriesRepository.manager.save(changeTitle)
 	}
 
-	categoriesPatch(){
-
+	async categoriesPatch(id, title){
+		return this.categoriesPut(id, title)
 	}
 
-	categoriesDelete(){
-
+	async categoriesDelete(id){
+		const deleteTitle = await this.categoriesRepository.findOne({where: {id}})
+		return this.categoriesRepository.manager.remove(deleteTitle)
 	}
 }
