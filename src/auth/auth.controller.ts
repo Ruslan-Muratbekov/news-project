@@ -1,6 +1,6 @@
 import {Body, Controller, Get, Param, Patch, Post, Put, Query, Req, UseGuards} from '@nestjs/common';
 import {AuthService} from "./auth.service";
-import {ApiExcludeEndpoint, ApiTags} from "@nestjs/swagger";
+import {ApiCreatedResponse, ApiExcludeEndpoint, ApiForbiddenResponse, ApiResponse, ApiTags} from "@nestjs/swagger";
 import {RegisterDto} from "./dto/register.dto";
 import {IRegister} from "./interface/register.interface";
 import {ResetPasswordDto} from "./dto/resetPassword.dto";
@@ -13,6 +13,10 @@ import {RefreshGuard} from "../common/guards/refresh.guard";
 import {ChangePasswordDto} from "./dto/changePassword-dto";
 import {EmailGuard} from "../common/guards/email.guard";
 import {PasswordGuard} from "../common/guards/password.guard";
+import {ProfilePutDto} from "./dto/profilePut.dto";
+import {ProfilePatchDto} from "./dto/profilePatch.dto";
+import {ProfileGetDto} from "./dto/profileGet.dto";
+import {ProfilePostDto} from "./dto/profilePost.dto";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -45,24 +49,46 @@ export class AuthController {
 		await this.authService.logout(req.user)
 	}
 
+	@UseGuards(AccessGuard)
 	@Get('profile')
-	async profileGet() {
-
+	@ApiCreatedResponse({type: ProfileGetDto})
+	async profileGet(
+		@Req() req: Request
+	) {
+		// @ts-ignore
+		return this.authService.profileGet(req.user)
 	}
 
+	@UseGuards(AccessGuard)
 	@Post('profile')
-	async profilePost() {
-
+	@ApiCreatedResponse({type: ProfilePostDto})
+	async profilePost(
+		@Req() req: Request
+	) {
+		// @ts-ignore
+		return this.authService.profilePost(req.user)
 	}
 
+	@UseGuards(AccessGuard)
 	@Put('profile')
-	async profilePut() {
-
+	@ApiCreatedResponse({type: ProfilePutDto})
+	async profilePut(
+		@Req() req: Request,
+		@Body() data: ProfilePutDto
+	) {
+		// @ts-ignore
+		return this.authService.profilePut(req.user, data)
 	}
 
+	@UseGuards(AccessGuard)
 	@Patch('profile')
-	async profilePatch() {
-
+	@ApiCreatedResponse({type: ProfilePatchDto})
+	async profilePatch(
+		@Req() req: Request,
+		@Body() data: ProfilePatchDto
+	) {
+		// @ts-ignore
+		return this.authService.profilePatch(req.user, data)
 	}
 
 	@UseGuards(AccessGuard)

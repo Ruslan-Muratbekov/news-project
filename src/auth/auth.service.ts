@@ -1,4 +1,4 @@
-import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
+import {BadRequestException, HttpException, HttpStatus, Injectable} from '@nestjs/common';
 import {RegisterDto} from "./dto/register.dto";
 import {InjectRepository} from "@nestjs/typeorm";
 import {AuthEntity} from "./entity/auth.entity";
@@ -21,6 +21,11 @@ import {ChangePasswordDto} from "./dto/changePassword-dto";
 import {VerifyEmailEntity} from "./entity/verifyEmail.entity";
 import {VerifyEmailDto} from "./dto/verifyEmail.dto";
 import {VerifyPasswordEntity} from "./entity/verifyPassword.entity";
+import {ProfileEntity} from "./entity/profile.entity";
+import {ProfileGetDto} from "./dto/profileGet.dto";
+import {ProfilePostDto} from "./dto/profilePost.dto";
+import {ProfilePutDto} from "./dto/profilePut.dto";
+import {ProfilePatchDto} from "./dto/profilePatch.dto";
 
 @Injectable()
 export class AuthService {
@@ -37,6 +42,7 @@ export class AuthService {
 		@InjectRepository(TokenEntity) private readonly tokenRepository: Repository<TokenEntity>,
 		@InjectRepository(VerifyEmailEntity) private readonly verifyRepository: Repository<VerifyEmailEntity>,
 		@InjectRepository(VerifyPasswordEntity) private readonly verifyPasswordRepository: Repository<VerifyPasswordEntity>,
+		@InjectRepository(ProfileEntity) private readonly profileRepository: Repository<ProfileEntity>,
 		private readonly jwtService: JwtService
 	) {
 	}
@@ -77,20 +83,46 @@ export class AuthService {
 		return;
 	}
 
-	async profileGet() {
-
+	async profileGet(user: ProfileGetDto) {
+		const profile = await this.profileRepository.findOne({where: {username: user.username}})
+		if (profile) {
+			return profile
+		}
+		throw new HttpException('Такого профиля нету!', HttpStatus.BAD_REQUEST)
 	}
 
-	async profilePost() {
-
+	async profilePost({username, first_name, last_name}: ProfilePostDto) {
+		const candidate = await this.profileRepository.findOne({where: {username}})
+		if(candidate){
+			throw new BadRequestException('Э такой пользователь уже есть базар фильтруй')
+		}
+		const newProfile = await this.profileRepository.create({
+			username,
+			last_name,
+			first_name
+		});
+		return this.profileRepository.manager.save(newProfile)
 	}
 
-	async profilePut() {
+	async profilePut(user: ProfilePutDto, data: ProfilePutDto) {
+		const candidate = await this.profileRepository.findOne({where: {username: user.username}})
+		const authEntity = await this.authRepository.findOne({where: {username: user.username}})
+		if(!candidate){
+			throw new BadRequestException('Э такого пользователь нету базар фильтруй')
+		}
+		authEntity.username = data?.username
+		authEntity.first_name = data?.first_name
+		authEntity.last_name = data?.last_name
 
+		candidate.username = data?.username
+		candidate.first_name = data?.first_name
+		candidate.last_name = data?.last_name
+		await this.profileRepository.manager.save(authEntity)
+		return this.profileRepository.manager.save(candidate)
 	}
 
-	async profilePatch() {
-
+	async profilePatch(user: ProfilePatchDto, data: ProfilePatchDto) {
+		return await this.profilePut(user, data)
 	}
 
 	async registerEmail(email, user: ReqUserDto): Promise<void> {

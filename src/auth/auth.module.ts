@@ -11,12 +11,13 @@ import {EmailStrategy} from "./strategys/email.strategy";
 import {VerifyEmailEntity} from "./entity/verifyEmail.entity";
 import {VerifyPasswordEntity} from "./entity/verifyPassword.entity";
 import {PasswordStrategy} from "./strategys/password.strategy";
+import {ProfileEntity} from "./entity/profile.entity";
 
 @Module({
 	controllers: [AuthController],
 	providers: [AuthService, AccessStrategy, RefreshStrategy, EmailStrategy, PasswordStrategy],
 	imports: [
-		TypeOrmModule.forFeature([AuthEntity, TokenEntity, VerifyEmailEntity, VerifyPasswordEntity]),
+		TypeOrmModule.forFeature([AuthEntity, TokenEntity, VerifyEmailEntity, VerifyPasswordEntity, ProfileEntity]),
 		JwtModule.register({})
 	]
 })

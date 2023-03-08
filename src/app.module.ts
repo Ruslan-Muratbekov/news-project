@@ -9,6 +9,7 @@ import {AuthEntity} from "./auth/entity/auth.entity";
 import {TokenEntity} from "./auth/entity/token.entity";
 import {VerifyEmailEntity} from "./auth/entity/verifyEmail.entity";
 import {VerifyPasswordEntity} from "./auth/entity/verifyPassword.entity";
+import {ProfileEntity} from "./auth/entity/profile.entity";
 
 @Module({
 	imports: [
@@ -20,7 +21,7 @@ import {VerifyPasswordEntity} from "./auth/entity/verifyPassword.entity";
 			username: process.env.DB_USERNAME,
 			password: process.env.DB_PASSWORD,
 			database: process.env.DB_DATABASE,
-			entities: [AuthEntity, TokenEntity, VerifyEmailEntity, VerifyPasswordEntity],
+			entities: [AuthEntity, TokenEntity, VerifyEmailEntity, VerifyPasswordEntity, ProfileEntity],
 			synchronize: true,
 		}),
 		AuthModule,
