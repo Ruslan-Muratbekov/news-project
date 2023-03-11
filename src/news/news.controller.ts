@@ -1,7 +1,9 @@
 import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from '@nestjs/common';
 import {NewsService} from "./news.service";
 import {NewPostDto} from "./dto/newPost.dto";
+import { ApiTags } from "@nestjs/swagger";
 
+@ApiTags("news")
 @Controller('news')
 export class NewsController {
 	constructor(
@@ -21,14 +23,14 @@ export class NewsController {
 		return this.newsService.newsPost(data)
 	}
 
-	@Get('id')
+	@Get(':id')
 	async newsGet(
 		@Param('id') id: number
 	){
 		return this.newsService.newsGet(id)
 	}
 
-	@Put('id')
+	@Put(':id')
 	async newsPut(
 		@Body() data: NewPostDto,
 		@Param('id') id: number
@@ -36,7 +38,7 @@ export class NewsController {
 		return this.newsService.newsPut(id, data)
 	}
 
-	@Patch('id')
+	@Patch(':id')
 	async newsPatch(
 		@Body() data: NewPostDto,
 		@Param('id') id: number
@@ -44,7 +46,7 @@ export class NewsController {
 		return this.newsService.newsPatch(id, data)
 	}
 
-	@Delete('id')
+	@Delete(':id')
 	async newsDelete(
 		@Param('id') id: number
 	){
